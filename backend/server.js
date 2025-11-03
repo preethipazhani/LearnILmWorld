@@ -1,24 +1,29 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import sessionRoutes from './routes/sessionRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import adminRoutes from './routes/adminRoutes.js'
 
-dotenv.config();
 
 const app = express();
 
 // Read frontend origins from .env (comma-separated)
-const frontendEnv = process.env.FRONTEND_URL || 'http://localhost:3000';
-const allowedOrigins = frontendEnv
-  .split(',')
-  .map(u => u.trim())
-  .filter(Boolean);
+// const frontendEnv = process.env.FRONTEND_URL || 'http://localhost:5173';
+// const allowedOrigins = frontendEnv
+//   .split(',')
+//   .map(u => u.trim())
+//   .filter(Boolean);
+
+const allowedOrigins = [
+  'http://localhost:5173',   // Vite default
+  'http://localhost:3000',   // CRA default
+  process.env.FRONTEND_URL,  // your deployed frontend (e.g., https://learnosphere.vercel.app)
+].filter(Boolean); // remove undefined
 
 // Middleware - robust CORS using env variable
 app.use(cors({
@@ -31,7 +36,8 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -40,6 +46,7 @@ app.use('/api/sessions', sessionRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {

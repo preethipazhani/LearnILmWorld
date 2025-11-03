@@ -13,7 +13,7 @@ import axios from 'axios'
    - Converted to TypeScript (tsx)
    - UI/layout follows EducatorDashboard pattern (sidebar, top bar, content area)
    - Kept all original logic intact (API calls, handlers, modals, validations)
-   - Preserved original color palette (primary teal: #0ea5a3)
+   - Preserved original color palette (primary teal: #9787F3)
    - Minor TS typing added for clarity, without altering behavior
    --------------------------- */
 
@@ -101,7 +101,7 @@ const StudentHome: React.FC = () => {
       {/* Welcome Section */}
       <div className="glass-effect rounded-2xl p-6 shadow-xl">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 bg-[#0ea5a3] rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-[#9787F3] rounded-lg flex items-center justify-center">
             <TrendingUp className="h-5 w-5 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900">Welcome back, {user?.name || 'student'}!</h2>
@@ -112,7 +112,7 @@ const StudentHome: React.FC = () => {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="glass-effect rounded-xl p-4 shadow-xl text-center">
-          <div className="w-10 h-10 bg-[#0ea5a3] rounded-xl flex items-center justify-center mx-auto mb-3">
+          <div className="w-10 h-10 bg-[#9787F3] rounded-xl flex items-center justify-center mx-auto mb-3">
             <BookOpen className="h-5 w-5 text-white" />
           </div>
           <div className="text-2xl font-bold text-gray-900 mb-1">{stats.totalSessions}</div>
@@ -136,7 +136,7 @@ const StudentHome: React.FC = () => {
         </div>
 
         <div className="glass-effect rounded-xl p-4 shadow-xl text-center">
-          <div className="w-10 h-10 bg-[#0ea5a3] rounded-xl flex items-center justify-center mx-auto mb-3">
+          <div className="w-10 h-10 bg-[#9787F3] rounded-xl flex items-center justify-center mx-auto mb-3">
             <Globe className="h-5 w-5 text-white" />
           </div>
           <div className="text-2xl font-bold text-gray-900 mb-1">${stats.totalSpent}</div>
@@ -156,7 +156,7 @@ const StudentHome: React.FC = () => {
             {recentSessions.map((session: AnyObj) => (
               <div key={session._id || session.id} className="p-4 bg-white bg-opacity-50 rounded-xl flex items-center justify-between">
                 <div className="flex items-center">
-                  <div className="w-10 h-10 bg-[#0ea5a3] rounded-xl flex items-center justify-center mr-3">
+                  <div className="w-10 h-10 bg-[#9787F3] rounded-xl flex items-center justify-center mr-3">
                     <User className="h-5 w-5 text-white" />
                   </div>
                   <div>
@@ -178,12 +178,12 @@ const StudentHome: React.FC = () => {
           </div>
         ) : (
           <div className="text-center py-8">
-            <div className="w-16 h-16 bg-[#0ea5a3]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="h-8 w-8 text-[#0ea5a3]" />
+            <div className="w-16 h-16 bg-[#9787F3]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="h-8 w-8 text-[#9787F3]" />
             </div>
             <h3 className="text-xl font-bold text-gray-900 mb-2">No sessions yet</h3>
             <p className="text-gray-600 mb-4 font-medium">Start your learning journey today</p>
-            <Link to="/main" className="inline-flex items-center gap-2 px-4 py-2 bg-[#0ea5a3] text-white rounded-lg hover:shadow-lg font-semibold">Book Your First Session</Link>
+            <Link to="/main" className="inline-flex items-center gap-2 px-4 py-2 bg-[#9787F3] text-white rounded-lg hover:shadow-lg font-semibold">Book Your First Session</Link>
           </div>
         )}
       </div>
@@ -299,7 +299,7 @@ const StudentSessions: React.FC = () => {
               <div key={session._id || session.id} className="p-4 bg-white bg-opacity-50 rounded-xl">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-[#0ea5a3] rounded-lg flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 bg-[#9787F3] rounded-lg flex items-center justify-center shrink-0">
                       <User className="h-5 w-5 text-white" />
                     </div>
 
@@ -322,7 +322,7 @@ const StudentSessions: React.FC = () => {
 
                     <div className="flex gap-2">
                       {(session.status === 'scheduled' || session.status === 'active') && session.jitsiLink ? (
-                        <a href={session.jitsiLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0ea5a3] text-white rounded-md text-sm hover:shadow focus:outline-none">
+                        <a href={session.jitsiLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#9787F3] text-white rounded-md text-sm hover:shadow focus:outline-none">
                           <Video className="h-4 w-4" /> <span>Join</span>
                         </a>
                       ) : session.status === 'completed' ? (
@@ -346,12 +346,12 @@ const StudentSessions: React.FC = () => {
           </div>
         ) : (
           <div className="text-center py-10">
-            <div className="w-16 h-16 bg-[#0ea5a3]/10 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Calendar className="h-7 w-7 text-[#0ea5a3]" />
+            <div className="w-16 h-16 bg-[#9787F3]/10 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Calendar className="h-7 w-7 text-[#9787F3]" />
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-1">No sessions yet</h3>
             <p className="text-sm text-gray-600 mb-4">Book your first session to get started</p>
-            <Link to="/main" className="inline-flex items-center gap-2 px-4 py-2 bg-[#0ea5a3] text-white rounded-md text-sm hover:shadow">Browse Trainers</Link>
+            <Link to="/main" className="inline-flex items-center gap-2 px-4 py-2 bg-[#9787F3] text-white rounded-md text-sm hover:shadow">Browse Trainers</Link>
           </div>
         )}
       </div>
@@ -381,12 +381,12 @@ const StudentSessions: React.FC = () => {
 
               <div>
                 <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-2">Comment</label>
-                <textarea id="comment" value={reviewData.comment} onChange={(e) => setReviewData(prev => ({ ...prev, comment: e.target.value }))} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-transparent text-sm" rows={3} placeholder="Share your experience..." required />
+                <textarea id="comment" value={reviewData.comment} onChange={(e) => setReviewData(prev => ({ ...prev, comment: e.target.value }))} className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-transparent text-sm" rows={3} placeholder="Share your experience..." required />
               </div>
 
               <div className="flex gap-3">
                 <button type="button" onClick={() => setShowReviewModal(false)} className="flex-1 px-3 py-2 border border-gray-200 text-sm text-gray-700 rounded-md hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={submittingReview} className="flex-1 px-3 py-2 bg-[#0ea5a3] text-white text-sm font-semibold rounded-md hover:shadow">
+                <button type="submit" disabled={submittingReview} className="flex-1 px-3 py-2 bg-[#9787F3] text-white text-sm font-semibold rounded-md hover:shadow">
                   {submittingReview ? 'Submitting...' : 'Submit Review'}
                 </button>
               </div>
@@ -553,7 +553,7 @@ const StudentProfile: React.FC = () => {
                   value={formData.profile.imageUrl}
                   onChange={handleChange}
                   placeholder="Paste image URL (or upload below)"
-                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-[#0ea5a3] transition-all duration-300 font-medium"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-[#9787F3] transition-all duration-300 font-medium"
                 />
 
                 <div className="flex gap-2 items-center">
@@ -583,7 +583,7 @@ const StudentProfile: React.FC = () => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-[#0ea5a3] transition-all duration-300 font-medium"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-[#9787F3] transition-all duration-300 font-medium"
                 required
               />
             </div>
@@ -609,7 +609,7 @@ const StudentProfile: React.FC = () => {
               name="profile.bio"
               value={formData.profile.bio}
               onChange={handleChange}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-[#0ea5a3] transition-all duration-300 font-medium"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-[#9787F3] transition-all duration-300 font-medium"
               rows={3}
               placeholder="Tell us about yourself..."
             />
@@ -624,7 +624,7 @@ const StudentProfile: React.FC = () => {
                 name="profile.phone"
                 value={formData.profile.phone}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-[#0ea5a3] transition-all duration-300 font-medium"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-[#9787F3] transition-all duration-300 font-medium"
                 placeholder="+1 (555) 123-4567"
               />
             </div>
@@ -637,7 +637,7 @@ const StudentProfile: React.FC = () => {
                 name="profile.location"
                 value={formData.profile.location}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-[#0ea5a3] transition-all duration-300 font-medium"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-[#9787F3] transition-all duration-300 font-medium"
                 placeholder="City, Country"
               />
             </div>
@@ -653,7 +653,7 @@ const StudentProfile: React.FC = () => {
                 name="profile.highestQualification"
                 value={formData.profile.highestQualification}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-[#0ea5a3] transition-all duration-300 font-medium"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-[#9787F3] transition-all duration-300 font-medium"
                 placeholder="e.g. B.Sc. Computer Science"
               />
             </div>
@@ -666,7 +666,7 @@ const StudentProfile: React.FC = () => {
                 name="profile.collegeName"
                 value={formData.profile.collegeName}
                 onChange={handleChange}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-[#0ea5a3] transition-all duration-300 font-medium"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-[#9787F3] transition-all duration-300 font-medium"
                 placeholder="College or University name"
               />
             </div>
@@ -675,7 +675,7 @@ const StudentProfile: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full px-6 py-3 bg-[#0ea5a3] text-white rounded-lg hover:shadow-lg font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-6 py-3 bg-[#9787F3] text-white rounded-lg hover:shadow-lg font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Updating...' : 'Update Profile'}
           </button>

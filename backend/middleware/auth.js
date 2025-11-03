@@ -9,6 +9,20 @@ export const authenticate = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    //  CASE 1: Admin from .env (no userId in token)
+    if (decoded.role === 'admin' && !decoded.userId) {
+      req.user = {
+        _id: 'env_admin',
+        name: 'Super Admin',
+        email: process.env.ADMIN_EMAIL,
+        role: 'admin',
+      };
+      return next();
+    }
+
+    //  CASE 2: Regular DB user
+
     const user = await User.findById(decoded.userId).select('-password');
 
     if (!user) {

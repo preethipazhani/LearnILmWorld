@@ -2,7 +2,7 @@ import React, { createContext, useContext } from 'react'
 import { loadStripe } from '@stripe/stripe-js'
 import { Elements } from '@stripe/react-stripe-js'
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51S23EsEiAibFBvoAcRhsYQj1fNiqfWKTJqrMgHlf76AjyFOyM81AU3DSqgboUKpIdClQmcMIEhUMOtOeYiz4eX4v00JEPCpKeA')
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51SFTuTAiYefZpFfcyRQjJAUIlyldQfTLpmtR1XvsmwPHESrdu7b5klbKyxsDF0a6YLurpdSnHEDLPFHmcyjbb6DP00KsLS35fZ')
 
 const StripeContext = createContext<{ stripe: any }>({ stripe: null })
 

@@ -136,7 +136,7 @@ const TrainerProfile: React.FC = () => {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Trainer not found</h2>
           <Link
             to="/main"
-            className="px-6 py-3 bg-[var(--brand-teal)] text-white rounded-lg font-semibold hover:bg-[var(--brand-teal)]/90 transition text-base"
+            className="px-6 py-3 bg-[#9787F3] text-white rounded-lg font-semibold hover:bg-[#9787F3]/90 transition text-base"
           >
             Browse Trainers
           </Link>
@@ -182,7 +182,7 @@ const TrainerProfile: React.FC = () => {
           <div className="rounded-xl p-6 shadow-lg bg-white/90 backdrop-blur-md">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-6">
               <div className="flex items-center gap-5">
-                <div className="w-24 h-24 bg-[var(--brand-teal)] rounded-xl overflow-hidden flex items-center justify-center">
+                <div className="w-24 h-24 bg-[#9787F3] rounded-xl overflow-hidden flex items-center justify-center">
                   {avatarSrc ? (
                     <img
                       src={avatarSrc}
@@ -214,7 +214,7 @@ const TrainerProfile: React.FC = () => {
                 </div>
                 <Link
                   to={`/book/${trainer._id}`}
-                  className="mt-3 inline-block px-5 py-3 bg-[var(--brand-teal)] text-white rounded-lg font-semibold hover:bg-[var(--brand-teal)]/90 transition text-base"
+                  className="mt-3 inline-block px-5 py-3 bg-[#9787F3] text-white rounded-lg font-semibold hover:bg-[#9787F3]/90 transition text-base"
                 >
                   Book Session
                 </Link>
@@ -224,19 +224,19 @@ const TrainerProfile: React.FC = () => {
             {/* Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="p-4 bg-[var(--bg-pale-top)] rounded-lg text-center">
-                <div className="text-2xl font-bold text-[var(--brand-teal)]">
+                <div className="text-2xl font-bold text-[#9787F3]">
                   {trainer.profile?.experience ?? 0}+
                 </div>
                 <div className="text-sm text-gray-700">Years</div>
               </div>
               <div className="p-4 bg-[var(--bg-pale-top)] rounded-lg text-center">
-                <div className="text-2xl font-bold text-[var(--brand-teal)]">
+                <div className="text-2xl font-bold text-[#9787F3]">
                   {trainer.stats?.completedSessions ?? 0}
                 </div>
                 <div className="text-sm text-gray-700">Completed</div>
               </div>
               <div className="p-4 bg-[var(--bg-pale-top)] rounded-lg text-center">
-                <div className="text-2xl font-bold text-[var(--brand-teal)]">
+                <div className="text-2xl font-bold text-[#9787F3]">
                   {trainer.profile?.totalBookings ?? 0}
                 </div>
                 <div className="text-sm text-gray-700">Students</div>
@@ -265,7 +265,7 @@ const TrainerProfile: React.FC = () => {
                     >
                       <div className="flex justify-between items-center mb-2">
                         <h4 className="font-semibold text-[var(--text)] text-base">{lang.language}</h4>
-                        <span className="px-3 py-1 bg-[var(--brand-teal)] text-white rounded-full text-sm">
+                        <span className="px-3 py-1 bg-[#9787F3] text-white rounded-full text-sm">
                           {lang.proficiency}
                         </span>
                       </div>
@@ -360,7 +360,7 @@ const TrainerProfile: React.FC = () => {
                 {trainer.profile.specializations.map((spec, idx) => (
                   <span
                     key={idx}
-                    className="px-3 py-1 bg-[var(--brand-teal)]/20 text-[var(--accent-orange)] rounded-full text-sm font-medium"
+                    className="px-3 py-1 bg-[#9787F3]/20 text-[var(--accent-orange)] rounded-full text-sm font-medium"
                   >
                     {spec}
                   </span>

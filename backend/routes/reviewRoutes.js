@@ -54,7 +54,7 @@ router.post('/', authenticate, async (req, res) => {
     // Update trainer's average rating
     const trainerReviews = await Review.find({ trainer: trainerId });
     const averageRating = trainerReviews.reduce((sum, r) => sum + r.rating, 0) / trainerReviews.length;
-    
+
     await User.findByIdAndUpdate(trainerId, {
       'stats.rating': Math.round(averageRating * 10) / 10,
       'profile.averageRating': Math.round(averageRating * 10) / 10
@@ -111,11 +111,26 @@ router.get('/trainer-reviews', authenticate, async (req, res) => {
   }
 });
 
+// Get review counts per trainer (for cards)
+router.get('/counts', async (req, res) => {
+  try {
+    const counts = await Review.aggregate([
+      { $group: { _id: '$trainer', count: { $sum: 1 } } }
+    ])
+    const result = {}
+    counts.forEach(c => (result[c._id] = c.count))
+    res.json(result)
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+})
+
+
 // Update review
 router.put('/:id', authenticate, async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
-    
+
     if (!review) {
       return res.status(404).json({ message: 'Review not found' });
     }
@@ -127,14 +142,14 @@ router.put('/:id', authenticate, async (req, res) => {
     const { rating, comment } = req.body;
     review.rating = rating;
     review.comment = comment;
-    
+
     await review.save();
     await review.populate(['student', 'trainer', 'session']);
 
     // Recalculate trainer's average rating
     const trainerReviews = await Review.find({ trainer: review.trainer._id });
     const averageRating = trainerReviews.reduce((sum, r) => sum + r.rating, 0) / trainerReviews.length;
-    
+
     await User.findByIdAndUpdate(review.trainer._id, {
       'stats.rating': Math.round(averageRating * 10) / 10,
       'profile.averageRating': Math.round(averageRating * 10) / 10
@@ -150,7 +165,7 @@ router.put('/:id', authenticate, async (req, res) => {
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const review = await Review.findById(req.params.id);
-    
+
     if (!review) {
       return res.status(404).json({ message: 'Review not found' });
     }
@@ -164,10 +179,10 @@ router.delete('/:id', authenticate, async (req, res) => {
 
     // Recalculate trainer's average rating
     const trainerReviews = await Review.find({ trainer: trainerId });
-    const averageRating = trainerReviews.length > 0 
-      ? trainerReviews.reduce((sum, r) => sum + r.rating, 0) / trainerReviews.length 
+    const averageRating = trainerReviews.length > 0
+      ? trainerReviews.reduce((sum, r) => sum + r.rating, 0) / trainerReviews.length
       : 5.0;
-    
+
     await User.findByIdAndUpdate(trainerId, {
       'stats.rating': Math.round(averageRating * 10) / 10,
       'profile.averageRating': Math.round(averageRating * 10) / 10

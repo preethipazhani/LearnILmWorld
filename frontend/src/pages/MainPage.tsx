@@ -1,17 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import {
-  Search,
-  Filter,
-  Star,
-  Globe,
-  Clock,
-  User,
-  MapPin,
-  ChevronDown,
-  X,
-  Play,
-  Heart
+  Search, Filter, Star, Globe, Clock, User, MapPin, ChevronDown, X, Play, Heart
 } from 'lucide-react'
 import axios from 'axios'
 import { motion } from 'framer-motion'
@@ -103,115 +94,187 @@ const MainPage: React.FC = () => {
     }
   }
 
+  const navigate = useNavigate()
+  const { user, isAdmin } = useAuth()
+
+  const handleDashboardClick = () => {
+
+    if (!user && !isAdmin) {
+      navigate('/login')
+      return
+    }
+
+    if (isAdmin) {
+      navigate('/admin')
+      return
+    }
+
+    if (user) {
+      if (user.role === 'trainer') navigate('/trainer')
+      else if (user.role === 'student') navigate('/student')
+    }
+  }
+
   // ---------- data fetching ----------
   useEffect(() => {
-    let mounted = true
-    const fetchTrainers = async () => {
-      try {
-        const response = await axios.get('/api/users/trainers')
-        const data = Array.isArray(response.data) ? response.data : []
-        if (mounted) setTrainers(data)
-      } catch (error) {
-        console.error('Failed to fetch trainers:', error)
-        if (mounted) setTrainers([])
-      } finally {
-        if (mounted) setLoading(false)
-      }
+  let mounted = true
+  const fetchData = async () => {
+    try {
+      // 1️ Fetch trainers
+      const response = await axios.get('/api/users/trainers')
+      let data = Array.isArray(response.data) ? response.data : []
+
+      // Keep only verified trainers
+      data = data.filter(trainer => trainer.profile.verificationStatus === 'verified')
+
+      //  Fetch public review counts (no auth)
+      const countsRes = await axios.get('/api/reviews/counts')
+
+      // 3️ Merge the counts into trainers
+      const counts = countsRes.data || {}
+      const merged = data.map(trainer => ({
+        ...trainer,
+        profile: {
+          ...trainer.profile,
+          totalBookings: counts[trainer._id] || 0  //  attach reviews count safely
+        }
+      }))
+
+      if (mounted) setTrainers(merged)
+    } catch (error) {
+      console.error('Failed to fetch trainers or counts:', error)
+      if (mounted) setTrainers([])
+    } finally {
+      if (mounted) setLoading(false)
     }
-    fetchTrainers()
-    return () => { mounted = false }
-  }, [])
+  }
+
+  fetchData()
+  return () => { mounted = false }
+}, [])
+
+  
 
   // ---------- derived filtered list (stable hooks) ----------
-  const filteredTrainers = useMemo(() => {
+    const filteredTrainers = useMemo(() => {
     try {
-      let list = (Array.isArray(trainers) ? trainers.slice() : []).filter(Boolean) as Trainer[]
-      const q = (searchTerm || '').trim().toLowerCase()
+      let list = (Array.isArray(trainers) ? [...trainers] : []).filter(Boolean);
 
+      const q = (searchTerm || '').trim().toLowerCase();
+
+      // Full-text search
       if (q) {
         list = list.filter(trainer => {
-          if (!trainer) return false
-          const name = (trainer.name || '').toLowerCase()
-          const bio = (trainer.profile?.bio || '').toLowerCase()
-          const languages = Array.isArray(trainer.profile?.languages) ? trainer.profile!.languages!.map(l => (l || '').toLowerCase()) : []
-          const trainerLangs = Array.isArray(trainer.profile?.trainerLanguages) ? trainer.profile!.trainerLanguages!.map(tl => (tl.language || '').toLowerCase()) : []
-          const specializations = Array.isArray(trainer.profile?.specializations) ? trainer.profile!.specializations!.map(s => (s || '').toLowerCase()) : []
+          if (!trainer) return false;
+          const name = (trainer.name || '').toLowerCase();
+          const bio = (trainer.profile?.bio || '').toLowerCase();
+
+          //  Merge both normal and trainerLanguages for simpler search
+          const allLangs = [
+            ...(trainer.profile?.languages || []),
+            ...(trainer.profile?.trainerLanguages?.map(tl => tl.language || '') || [])
+          ]
+            .filter(Boolean)
+            .map(l => l.toLowerCase());
+
+          const specializations = (trainer.profile?.specializations || [])
+            .filter(Boolean)
+            .map(s => s.toLowerCase());
+
           return (
             name.includes(q) ||
             bio.includes(q) ||
-            languages.some(lang => lang.includes(q)) ||
-            trainerLangs.some(lang => lang.includes(q)) ||
+            allLangs.some(lang => lang.includes(q)) ||
             specializations.some(spec => spec.includes(q))
-          )
-        })
+          );
+        });
       }
 
-      // Language filter
-      if (filters.language && filters.language.trim() !== '') {
-        const langQ = filters.language.trim().toLowerCase()
+      // Language Filter
+      if (filters.language.trim() !== '') {
+        const langQ = filters.language.trim().toLowerCase();
+
         list = list.filter(trainer => {
-          const langs = Array.isArray(trainer.profile?.languages) ? trainer.profile!.languages!.map(l => (l || '').toLowerCase()) : []
-          const tlangs = Array.isArray(trainer.profile?.trainerLanguages) ? trainer.profile!.trainerLanguages!.map(tl => (tl.language || '').toLowerCase()) : []
-          return langs.some(l => l.includes(langQ)) || tlangs.some(l => l.includes(langQ))
-        })
+          const allLangs = [
+            ...(trainer.profile?.languages || []),
+            ...(trainer.profile?.trainerLanguages?.map(tl => tl.language || '') || [])
+          ]
+            .filter(Boolean)
+            .map(l => l.toLowerCase());
+
+          return allLangs.some(lang => lang.includes(langQ));
+        });
       }
 
-      // Price range
+      // Price filters
+      const min = parseNumber(filters.minRate, 0);
+      const max = parseNumber(filters.maxRate, Infinity);
       if (filters.minRate !== '') {
-        const min = parseNumber(filters.minRate, 0)
-        list = list.filter(trainer => parseNumber(trainer.profile?.hourlyRate, 0) >= min)
+        list = list.filter(t => parseNumber(t.profile?.hourlyRate, 0) >= min);
       }
       if (filters.maxRate !== '') {
-        const max = parseNumber(filters.maxRate, Infinity)
-        list = list.filter(trainer => parseNumber(trainer.profile?.hourlyRate, 0) <= max)
+        list = list.filter(t => parseNumber(t.profile?.hourlyRate, 0) <= max);
       }
 
-      // Experience filter
+      // Experience
       if (filters.experience !== '') {
-        const minExp = parseNumber(filters.experience, 0)
-        list = list.filter(trainer => parseNumber(trainer.profile?.experience, 0) >= minExp)
+        const minExp = parseNumber(filters.experience, 0);
+        list = list.filter(t => parseNumber(t.profile?.experience, 0) >= minExp);
       }
 
-      // Specialization filter
-      if (filters.specialization && filters.specialization.trim() !== '') {
-        const specQ = filters.specialization.trim().toLowerCase()
-        list = list.filter(trainer => {
-          const specs = Array.isArray(trainer.profile?.specializations) ? trainer.profile!.specializations!.map(s => (s || '').toLowerCase()) : []
-          return specs.some(s => s.includes(specQ))
-        })
+      // Specialization
+      if (filters.specialization.trim() !== '') {
+        const specQ = filters.specialization.trim().toLowerCase();
+        list = list.filter(t =>
+          (t.profile?.specializations || [])
+            .filter(Boolean)
+            .some(s => s.toLowerCase().includes(specQ))
+        );
       }
 
-      // Rating filter
+      // Rating
       if (filters.rating !== '') {
-        const minRating = parseNumber(filters.rating, 0)
-        list = list.filter(trainer => getRating(trainer) >= minRating)
+        const minRating = parseNumber(filters.rating, 0);
+        list = list.filter(t => getRating(t) >= minRating);
       }
 
       // Sorting
-      const sorted = list.slice()
       switch (filters.sortBy) {
         case 'rating':
-          sorted.sort((a, b) => getRating(b) - getRating(a))
-          break
+          list.sort((a, b) => getRating(b) - getRating(a));
+          break;
         case 'price_low':
-          sorted.sort((a, b) => parseNumber(a.profile?.hourlyRate, 0) - parseNumber(b.profile?.hourlyRate, 0))
-          break
+          list.sort(
+            (a, b) =>
+              parseNumber(a.profile?.hourlyRate, 0) -
+              parseNumber(b.profile?.hourlyRate, 0)
+          );
+          break;
         case 'price_high':
-          sorted.sort((a, b) => parseNumber(b.profile?.hourlyRate, 0) - parseNumber(a.profile?.hourlyRate, 0))
-          break
+          list.sort(
+            (a, b) =>
+              parseNumber(b.profile?.hourlyRate, 0) -
+              parseNumber(a.profile?.hourlyRate, 0)
+          );
+          break;
         case 'experience':
-          sorted.sort((a, b) => parseNumber(b.profile?.experience, 0) - parseNumber(a.profile?.experience, 0))
-          break
+          list.sort(
+            (a, b) =>
+              parseNumber(b.profile?.experience, 0) -
+              parseNumber(a.profile?.experience, 0)
+          );
+          break;
         default:
-          break
+          break;
       }
 
-      return sorted
+      return list;
     } catch (err) {
-      console.error('filtering error', err)
-      return []
+      console.error('filtering error', err);
+      return [];
     }
-  }, [trainers, searchTerm, filters, getRating])
+  }, [trainers, searchTerm, filters, getRating]);
+
 
   // ---------- stable callbacks ----------
   const clearFilters = useCallback(() => {
@@ -246,55 +309,96 @@ const MainPage: React.FC = () => {
     )
   }
 
+  const assignTopTrainer = async () => {
+    if (!user) return
+
+    const studentLanguage = user?.profile?.learningLanguage || localStorage.getItem('learningLanguage')
+
+    let availableTrainers = filteredTrainers.filter(t => t.profile?.isAvailable)
+
+    if (studentLanguage) {
+      availableTrainers = availableTrainers.filter(t =>
+        t.profile?.trainerLanguages?.some(tl =>
+          tl.language?.toLowerCase() === studentLanguage.toLowerCase()
+        )
+      )
+    }
+
+
+    // Find first available trainer
+    const topTrainer = availableTrainers.sort((a, b) =>
+      (b.profile?.averageRating || 0) - (a.profile?.averageRating || 0)
+    )[0]
+
+    if (!topTrainer) {
+      alert('No trainers are currently available. Please try again later.')
+      return
+    }
+
+    // Redirect to booking page instead of directly assigning
+    navigate(`/book/${topTrainer._id}`)
+  }
+
+
+
   // ---------- render ----------
   return (
-    <div className="min-h-screen bg-pale" style={{ background: `linear-gradient(180deg,var(--bg-pale-top),var(--bg-pale-bottom))` }}>
+    <div className="min-h-screen bg-[#dc8d33] text-[#2D274B]" 
+    // style={{ background: `linear-gradient(180deg,var(--bg-pale-top),var(--bg-pale-bottom))` }}
+    >
       {/* Floating decorative orbs (kept) */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-16 left-8 w-28 h-28 rounded-full" style={{ background: 'var(--brand-teal)', opacity: 0.06, animation: 'floaty 6s ease-in-out infinite' }} />
-        <div className="absolute top-40 right-12 w-20 h-20 rounded-full" style={{ background: 'var(--teal-mid)', opacity: 0.06, animation: 'floaty 6s ease-in-out infinite', animationDelay: '1.8s' }} />
+        <div className="absolute top-16 left-8 w-28 h-28 rounded-full" style={{ background: '#9787F3', opacity: 0.06, animation: 'floaty 6s ease-in-out infinite' }} />
+        <div className="absolute top-40 right-12 w-20 h-20 rounded-full" style={{ background: '#9787F3', opacity: 0.06, animation: 'floaty 6s ease-in-out infinite', animationDelay: '1.8s' }} />
         <div className="absolute bottom-20 left-1/4 w-36 h-36 rounded-full" style={{ background: 'var(--accent-orange)', opacity: 0.04, animation: 'floaty 6s ease-in-out infinite', animationDelay: '3.2s' }} />
       </div>
 
       {/* Header (smaller) */}
-      <header className="relative z-10 bg-white bg-opacity-90 backdrop-blur-lg border-b border-white border-opacity-30 sticky top-0">
+      <header className=" z-10 bg-[#dc8d33]  bg-opacity-90 backdrop-blur-lg border-b border-white border-opacity-30 sticky top-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-3">
+          <div className="flex flex-col sm:flex-row justify-between items-center py-3 gap-3 sm:gap-0">
             <Link to="/" className="flex items-center">
               <div>
                 <div className="text-2xl md:text-3xl font-[Good Vibes] font-extrabold tracking-wide relative inline-flex items-center">
-    {/* LEARN */}
-    <span className="bg-gradient-to-r from-black via-gray-800 to-gray-700 bg-clip-text text-transparent drop-shadow-lg">
-      LEARN
-    </span>
+                {/* LEARN */}
+                <span className="bg-gradient-to-r from-black via-gray-800 to-gray-700 bg-clip-text text-transparent drop-shadow-lg">
+                  LEARNILMWORLD
+                </span>
 
-    {/* Rotating Globe */}
-    <motion.span
-      animate={{ rotate: 360 }}
-      transition={{ repeat: Infinity, duration: 12, ease: "linear" }}
-      className="inline-block mx-1 text-3xl"
-    >
-      🌎
-    </motion.span>
+                {/* Rotating Globe */}
+                <motion.span
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 12, ease: "linear" }}
+                  className="inline-block mx-1 text-3xl"
+                >
+                  🌎
+                </motion.span>
 
-    {/* SPHERE */}
-    <span className="bg-gradient-to-r from-black via-gray-800 to-gray-700 bg-clip-text text-transparent drop-shadow-lg">
-      SPHERE
-    </span>
+                {/* SPHERE */}
+                {/* <span className="bg-gradient-to-r from-black via-gray-800 to-gray-700 bg-clip-text text-transparent drop-shadow-lg">
+                  SPHERE
+                </span> */}
 
-    {/* Optional subtle shine */}
-    <motion.div
-      className="absolute top-0 left-0 w-full h-full bg-white/20 rounded-full blur-xl pointer-events-none"
-      animate={{ x: [-200, 200] }}
-      transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
-    />
-  </div>
+                {/* Optional subtle shine */}
+                <motion.div
+                  className="absolute top-0 left-0 w-full h-full bg-white/20 rounded-full blur-xl pointer-events-none"
+                  animate={{ x: [-200, 200] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+                />
+              </div>
 
               </div>
             </Link>
 
             <nav className="flex items-center space-x-4">
-              <Link to="/student/*" className="px-3 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100">Dashboard</Link>
+              <button
+                onClick={handleDashboardClick}
+                className="relative overflow-hidden group px-5 py-2 rounded-xl font-semibold text-white bg-[#CBE56A] hover:bg-[#CBE56A] transition-all duration-300 shadow-md hover:shadow-lg"
+              >
+                <span className="relative z-10">Dashboard</span>
+                <span className="absolute inset-0 bg-gradient-to-r from-[#9787F3] to-[var(--accent-orange)] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+              </button>
+
             </nav>
           </div>
         </div>
@@ -304,11 +408,11 @@ const MainPage: React.FC = () => {
         
          {/* Page title (single-line hero) */}
         <div className="text-center mb-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 break-keep">
+          <h1 className="text-4xl md:text-5xl font-extrabold  mb-2 break-keep">
             Find Your Perfect Language Trainer
           </h1>
           {/* Description below the hero line */}
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          <p className="text-2xl text-white font-bold max-w-3xl mx-auto">
             Connect with expert language trainers from around the world. Start your journey to fluency today.
           </p>
         </div>
@@ -324,14 +428,14 @@ const MainPage: React.FC = () => {
                   placeholder="Search trainers by name, language, or specialization..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal)] focus:border-[var(--brand-teal)] transition-all duration-200 text-lg"
+                  className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9787F3] focus:border-[#9787F3] transition-all duration-200 text-lg"
                 />
               </div>
 
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => setShowFilters(s => !s)}
-                  className="flex items-center px-4 py-3 bg-[var(--brand-teal)] text-white rounded-xl hover:bg-[var(--brand-teal)]/90 transition-all duration-200 font-semibold"
+                  className="flex items-center px-4 py-3 bg-[#9787F3] text-white rounded-xl hover:bg-[#8d7cf1] transition-all duration-200 font-semibold"
                   aria-expanded={showFilters}
                 >
                   <Filter className="h-4 w-4 mr-2" />
@@ -341,7 +445,7 @@ const MainPage: React.FC = () => {
 
                 <button
                   onClick={clearFilters}
-                  className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors duration-200 font-medium"
+                  className="px-4 py-3 bg-gray-100 text-[#4A4470] rounded-xl hover:bg-gray-200 transition-colors duration-200 font-medium"
                 >
                   Clear All
                 </button>
@@ -353,66 +457,66 @@ const MainPage: React.FC = () => {
               <div className="mt-4 p-4 rounded-xl animate-slide-down max-w-2xl mx-auto">
                 <div className="grid md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Language</label>
+                    <label className="block text-sm font-semibold text-[#4A4470] mb-1">Language</label>
                     <input
                       type="text"
                       placeholder="e.g., English, Spanish"
                       value={filters.language}
                       onChange={(e) => setFilters(prev => ({ ...prev, language: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal)]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Min Price ($/hr)</label>
+                    <label className="block text-sm font-semibold text-[#4A4470] mb-1">Min Price ($/hr)</label>
                     <input
                       type="number"
                       placeholder="0"
                       value={filters.minRate}
                       onChange={(e) => setFilters(prev => ({ ...prev, minRate: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal)]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Max Price ($/hr)</label>
+                    <label className="block text-sm font-semibold text-[#4A4470] mb-1">Max Price ($/hr)</label>
                     <input
                       type="number"
                       placeholder="100"
                       value={filters.maxRate}
                       onChange={(e) => setFilters(prev => ({ ...prev, maxRate: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal)]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Min Experience (years)</label>
+                    <label className="block text-sm font-semibold text-[#4A4470] mb-1">Min Experience (years)</label>
                     <input
                       type="number"
                       placeholder="0"
                       value={filters.experience}
                       onChange={(e) => setFilters(prev => ({ ...prev, experience: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal)]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Specialization</label>
+                    <label className="block text-sm font-semibold text-[#4A4470] mb-1">Specialization</label>
                     <input
                       type="text"
                       placeholder="e.g., Business, Exam Prep"
                       value={filters.specialization}
                       onChange={(e) => setFilters(prev => ({ ...prev, specialization: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal)]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3]"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Min Rating</label>
+                    <label className="block text-sm font-semibold text-[#4A4470] mb-1">Min Rating</label>
                     <select
                       value={filters.rating}
                       onChange={(e) => setFilters(prev => ({ ...prev, rating: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal)]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3]"
                     >
                       <option value="">Any Rating</option>
                       <option value="4.5">4.5+ Stars</option>
@@ -422,11 +526,11 @@ const MainPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Sort By</label>
+                    <label className="block text-sm font-semibold text-[#4A4470] mb-1">Sort By</label>
                     <select
                       value={filters.sortBy}
                       onChange={(e) => setFilters(prev => ({ ...prev, sortBy: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-teal)]"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9787F3]"
                     >
                       <option value="rating">Highest Rated</option>
                       <option value="price_low">Price: Low to High</option>
@@ -436,7 +540,7 @@ const MainPage: React.FC = () => {
                   </div>
 
                   <div className="flex items-end">
-                    <button onClick={clearFilters} className="w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium">
+                    <button onClick={clearFilters} className="w-full px-4 py-2 bg-gray-200 text-[#4A4470] rounded-lg hover:bg-gray-300 transition-colors duration-200 font-medium">
                       Clear All
                     </button>
                   </div>
@@ -448,13 +552,25 @@ const MainPage: React.FC = () => {
 
         {/* Results Count */}
         <div className="mb-6 text-center">
-          <p className="text-lg text-gray-600">
-            Found <span className="font-bold text-[var(--brand-teal)]">{filteredTrainers.length}</span> trainers
+          <p className="text-lg text-white">
+            Found <span className="font-bold text-[#9787F3]">{filteredTrainers.length}</span> trainers
           </p>
         </div>
 
+        {user?.role === 'student' && filteredTrainers.length > 0 && (
+          <div className="mb-6 text-center">
+            <button
+              onClick={assignTopTrainer}
+              className="px-6 py-3 bg-[#CBE56A] text-white rounded-xl font-semibold hover:bg-[#CBE56A] transition"
+            >
+              Assign Me a Top Trainer
+            </button>
+          </div>
+        )}
+
+
         {/* Trainers Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid gap-6 sm:gap-8 md:gap-10 grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
           {filteredTrainers.map((trainer, index) => {
             const id = trainer._id || `trainer-${index}`
 
@@ -497,7 +613,7 @@ const MainPage: React.FC = () => {
                           aria-label="Play demo"
                         >
                           <div className="bg-white/95 hover:bg-white p-3 rounded-full shadow-2xl flex items-center justify-center border border-white">
-                            <Play className="h-6 w-6 text-[var(--brand-teal)]" />
+                            <Play className="h-6 w-6 text-[#9787F3]" />
                           </div>
                         </button>
                       </>
@@ -529,7 +645,7 @@ const MainPage: React.FC = () => {
                           className="absolute top-3 right-3 bg-white/90 hover:bg-white rounded-full p-1 shadow"
                           aria-label="Close video"
                         >
-                          <X className="h-4 w-4 text-gray-700" />
+                          <X className="h-4 w-4 text-[#4A4470]" />
                         </button>
                       </>
                     )}
@@ -545,9 +661,9 @@ const MainPage: React.FC = () => {
                 )}
 
                 {/* Trainer details (price moved up) */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center">
-                    <div className="w-12 h-12 bg-[var(--brand-teal)] rounded-lg flex items-center justify-center mr-3 overflow-hidden flex-shrink-0">
+                <div className="flex flex-wrap items-start justify-between gap-y-3 mb-3">
+                  <div className="flex items-center min-w-0 flex-1">
+                    <div className="w-12 h-12 bg-[#9787F3] rounded-lg flex items-center justify-center mr-3 overflow-hidden flex-shrink-0">
                       {avatar ? (
                         <img src={avatar} alt={trainer.name || 'Trainer'} className="w-full h-full object-cover" />
                       ) : (
@@ -556,8 +672,8 @@ const MainPage: React.FC = () => {
                     </div>
 
                     <div className="min-w-0">
-                      <h3 className="text-lg font-semibold text-gray-900 truncate">{trainer.name || 'Unnamed Trainer'}</h3>
-                      <div className="flex items-center text-sm text-gray-600 mt-1 gap-3">
+                      <h3 className="text-lg font-semibold text-[#2D274B] truncate">{trainer.name || 'Unnamed Trainer'}</h3>
+                      <div className="flex flex-wrap items-center text-sm text-[#6A6592] mt-1 gap-2">
                         <div className="inline-flex items-center gap-1 bg-yellow-50 text-yellow-700 px-2 py-0.5 rounded-full text-sm">
                           <Star className="h-4 w-4" />
                           <span className="font-medium">{rating.toFixed(1)}</span>
@@ -567,9 +683,11 @@ const MainPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* PRICE: only shown up here */}
+                  {/* PRICE */}
                   <div className="flex-shrink-0">
-                    <div className="px-3 py-1 bg-[var(--brand-teal)] text-white rounded-full font-semibold">${parseNumber(trainer.profile?.hourlyRate, 25)}/hr</div>
+                    <div className="px-3 py-1 bg-[#9787F3] text-white rounded-full font-semibold text-sm sm:text-base">
+                      ${parseNumber(trainer.profile?.hourlyRate, 25)}/hr
+                    </div>
                   </div>
                 </div>
 
@@ -583,39 +701,51 @@ const MainPage: React.FC = () => {
                 </div>
 
                 {/* bio (moved below filters per request; kept short) */}
-                <p className="text-gray-600 mb-4 line-clamp-3 flex-1">
+                <p className="text-[#6A6592] mb-4 line-clamp-3 flex-1">
                   {trainer.profile?.bio || 'Experienced language trainer helping students achieve fluency through personalized lessons.'}
                 </p>
 
                 {/* stats */}
-                <div className="flex items-center gap-4 text-gray-600 mb-4">
+                <div className="flex items-center gap-4 text-[#6A6592] mb-4">
                   <div className="flex items-center gap-2 text-sm">
-                    <Clock className="h-4 w-4 text-[var(--brand-teal)]" />
+                    <Clock className="h-4 w-4 text-[#9787F3]" />
                     <span>{parseNumber(trainer.profile?.experience, 5)}+ years</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-[var(--brand-teal)]" />
+                    <MapPin className="h-4 w-4 text-[#9787F3]" />
                     <span>{trainer.profile?.location || 'Online'}</span>
                   </div>
                 </div>
 
-                {/* Bottom CTAs: only heart, View Profile, Book Now */}
-                <div className="mt-auto pt-2 border-t border-gray-100 flex items-center justify-between">
-                  <button
-                    onClick={() => toggleFavorite(id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium ${favorites[id] ? 'bg-pink-100 text-pink-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-                    aria-pressed={!!favorites[id]}
-                    aria-label={favorites[id] ? 'Unfavorite' : 'Add to favorites'}
-                  >
-                    <Heart className="h-4 w-4" />
-                    <span className="sr-only">Favorite</span>
-                  </button>
+              {/* Bottom CTAs */}
+              <div className="mt-auto flex flex-wrap gap-3 justify-between items-center">
+                <button
+                  onClick={() => toggleFavorite(id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-full border ${favorites[id] ? 'bg-red-100 border-red-300 text-red-600' : 'border-gray-300 text-[#6A6592] hover:bg-gray-100'}`}
+                >
+                  <Heart className="h-5 w-5" />
+                  {favorites[id] ? 'Liked' : 'Like'}
+                </button>
 
-                  <div className="flex items-center gap-3">
-                    <Link to={`/trainer-profile/${trainer._id}`} className="px-3 py-2 bg-gray-100 rounded-md text-sm hover:bg-gray-200 transition">View Profile</Link>
-                    <Link to={`/book/${trainer._id}`} className="px-3 py-2 bg-[var(--brand-teal)] text-white rounded-md text-sm hover:brightness-95 transition">Book Now</Link>
+                {!user ? (
+                  <Link to="/login" className="w-full sm:w-auto text-center px-4 py-2 bg-[#CBE56A] text-[#2D274B] rounded-lg font-medium hover:bg-[#CBE56A]">
+                    Sign In
+                  </Link>
+                ) : (
+                  <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    <Link to={`/trainer/${id}`} className="px-4 py-2 bg-gray-100 text-[#4A4470] rounded-lg font-medium hover:bg-[#CBE56A] text-center">
+                      View Profile
+                    </Link>
+                    <button
+                      onClick={() => navigate(`/book/${id}`)}
+                      className="px-4 py-2 bg-[#CBE56A] text-[#4A4470] rounded-lg font-medium hover:bg-[#CBE56A] text-center"
+                    >
+                      Book Now
+                    </button>
                   </div>
-                </div>
+                )}
+              </div>
+
               </article>
             )
           })}
@@ -627,8 +757,8 @@ const MainPage: React.FC = () => {
             <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
               <Search className="h-12 w-12 text-gray-400" />
             </div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">No trainers found</h3>
-            <p className="text-gray-600 mb-8">Try adjusting your search criteria or filters</p>
+            <h3 className="text-2xl font-bold text-[#2D274B] mb-4">No trainers found</h3>
+            <p className="text-[#6A6592] mb-8">Try adjusting your search criteria or filters</p>
             <button onClick={clearFilters} className="btn-primary">Clear Filters</button>
           </div>
         )}

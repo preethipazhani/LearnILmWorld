@@ -15,17 +15,26 @@ import BookingPage from './pages/BookingPage'
 import SessionRoom from './pages/SessionRoom'
 import TrainerProfile from './pages/TrainerProfile'
 import Trainers from './pages/Trainers'
+import ForgotPassword from './pages/ForgetPassword';
+import ResetPassword from './pages/ResetPassword';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import BecomeTrainer from './pages/BecomeTrainer';
+import AboutPage from './pages/AboutPage';
 function App() {
   return (
-    <StripeProvider>
+     <StripeProvider>
       <AuthProvider>
         <Router>
           <div className="min-h-screen bg-gradient-to-br from-cream-50 to-green-50">
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/main" element={<MainPage />} />
+              <Route path="/become-trainer" element={<BecomeTrainer />} />
+              <Route path="/about" element={<AboutPage />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/forget-password" element={<ForgotPassword />} />
               <Route path="/trainer-profile/:trainerId" element={<TrainerProfile />} />
               <Route path="/book/:trainerId" element={<BookingPage />} />
               
@@ -34,6 +43,13 @@ function App() {
                   <StudentDashboard />
                 </PrivateRoute>
               } />
+
+              <Route path="/admin/*" element={
+                <PrivateRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </PrivateRoute>
+                } />
+
               <Route path="/trainers" element={<Trainers />} /> 
               <Route path="/trainer/*" element={
                 <PrivateRoute allowedRoles={['trainer']}>
@@ -50,7 +66,7 @@ function App() {
           </div>
         </Router>
       </AuthProvider>
-    </StripeProvider>
+     </StripeProvider>
   );
 }
 

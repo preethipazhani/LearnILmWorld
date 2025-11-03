@@ -555,7 +555,15 @@ const TrainerProfile = () => {
     phone: user?.profile?.phone || '',
     location: user?.profile?.location || '',
     specializations: Array.isArray(user?.profile?.specializations) ? [...user.profile.specializations] : [],
-    certifications: Array.isArray(user?.profile?.certifications) ? [...user.profile.certifications] : [],
+    certifications: Array.isArray(user?.profile?.certifications) 
+      ? user.profile.certifications.map(cert => ({
+          name: cert.name || '',
+          issuer: cert.issuer || '',
+          year: cert.year || null,
+          certificateImage: cert.certificateImage || '',
+          certificateLink: cert.certificateLink || ''
+        }))
+      : [],
     availability: Array.isArray(user?.profile?.availability) ? [...user.profile.availability] : [],
     profileImages: Array.isArray(user?.profile?.profileImages) ? [...user.profile.profileImages] : [],
     socialMedia: {
@@ -568,8 +576,16 @@ const TrainerProfile = () => {
     demoVideo: user?.profile?.demoVideo || '',
     isAvailable: user?.profile?.isAvailable ?? true,
     totalBookings: user?.profile?.totalBookings ?? 0,
-    averageRating: user?.profile?.averageRating ?? 5.0
+    averageRating: user?.profile?.averageRating ?? 5.0,
   }
+
+  const certFields = [
+    { key: 'name', type: 'text', placeholder: 'Certification Name' },
+    { key: 'issuer', type: 'text', placeholder: 'Issuer' },
+    { key: 'year', type: 'number', placeholder: 'Year', min: 1950, max: CURRENT_YEAR },
+    { key: 'certificateLink', type: 'url', placeholder: 'https://certificate-link.com' }
+  ]
+
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -596,7 +612,7 @@ const TrainerProfile = () => {
   }, [])
 
   /* --- Generic handlers --- */
-  const handleChange = (e) => {
+  const handleChange = (e:any) => {
     const { name, value, type, checked } = e.target
     if (name.startsWith('profile.socialMedia.')) {
       const key = name.split('.')[2]
@@ -617,11 +633,11 @@ const TrainerProfile = () => {
     }
   }
 
-  const addToArray = (field, value) => {
+  const addToArray = (field:any, value:unknown) => {
     if (!value) return
     setFormData(prev => ({ ...prev, profile: { ...prev.profile, [field]: [...(prev.profile[field] || []), value] } }))
   }
-  const removeFromArray = (field, index) => {
+  const removeFromArray = (field:any, index:number) => {
     setFormData(prev => ({ ...prev, profile: { ...prev.profile, [field]: (prev.profile[field] || []).filter((_, i) => i !== index) } }))
   }
 
@@ -657,7 +673,34 @@ const TrainerProfile = () => {
     updateObjectInArray('certifications', index, 'year', year)
   }
 
-  const handleSubmit = async (e) => {
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files && e.target.files[0]
+      if (!file) return
+      const reader = new FileReader()
+      reader.onload = () => {
+        const dataUrl = reader.result as string
+        setFormData(prev => ({
+          ...prev,
+          profile: {
+            ...prev.profile,
+            imageUrl: dataUrl
+          }
+        }))
+      }
+      reader.readAsDataURL(file)
+    }
+  
+    const handleRemoveImage = () => {
+      setFormData(prev => ({
+        ...prev,
+        profile: {
+          ...prev.profile,
+          imageUrl: ''
+        }
+      }))
+    }
+
+  const handleSubmit = async (e:any) => {
     e.preventDefault()
     setLoading(true); setError(''); setSuccess('')
 
@@ -669,7 +712,23 @@ const TrainerProfile = () => {
     }
 
     try {
-      const result = await updateProfile(formData) // expects updateProfile from context to return { success, error? }
+
+      if (!user) {
+      setError('User not found')
+      setLoading(false)
+      return
+    }
+    
+       const updatedProfile = {
+      ...user.profile,       // existing fields
+      ...formData.profile    // updated fields from form
+    }
+
+      const result = await updateProfile({ 
+      ...formData, 
+      profile: updatedProfile 
+    }) // expects updateProfile from context to return { success, error? }
+
       if (result?.success) setSuccess('Profile updated successfully!')
       else setError(result?.error || 'Failed to update profile')
     } catch (err) {
@@ -690,21 +749,49 @@ const TrainerProfile = () => {
           
         </div>
 
-        <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Primary Profile Image URL</label>
-                {/* preview */}
-                <div className="mb-3">
-                  {getPrimaryImage() ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={getPrimaryImage()} alt="profile preview" className="w-40 h-40 rounded-md object-cover border" />
-                  ) : (
-                    <div className="w-40 h-40 rounded-md bg-gray-100 flex items-center justify-center border">
-                      <User className="h-8 w-8 text-gray-400" />
-                    </div>
+         {/* Image: preview + URL + file upload */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">Profile image</label>
+
+            <div className="flex items-start gap-4">
+              <div className="w-28 h-28 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+                {formData.profile.imageUrl ? (
+                  // preview (base64 or remote url)
+                  // eslint-disable-next-line jsx-a11y/img-redundant-alt
+                  <img src={formData.profile.imageUrl} alt="Profile preview" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="text-xs text-slate-500 px-2 text-center">No image</div>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <input
+                  type="url"
+                  id="profile.imageUrl"
+                  name="profile.imageUrl"
+                  value={formData.profile.imageUrl}
+                  onChange={handleChange}
+                  placeholder="Paste image URL (or upload below)"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0ea5a3] focus:border-[#0ea5a3] transition-all duration-300 font-medium"
+                />
+
+                <div className="flex gap-2 items-center">
+                  <label className="cursor-pointer inline-block">
+                    <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                    <span className="px-4 py-2 rounded-lg bg-gray-100 border font-medium text-sm hover:bg-gray-200">Upload image</span>
+                  </label>
+
+                  {formData.profile.imageUrl && (
+                    <button type="button" onClick={handleRemoveImage} className="px-4 py-2 rounded-lg bg-red-50 border text-red-600 text-sm hover:bg-red-100">
+                      Remove
+                    </button>
                   )}
                 </div>
-                <input name="profile.imageUrl" value={formData.profile.imageUrl} onChange={handleChange} className="input-field" placeholder="https://example.com/image.jpg" />
+
+                <div className="text-xs text-slate-500">Tip: Paste an image URL or upload a file. Upload uses a local base64 preview — to persist, your updateProfile should accept image data or you should upload to storage and save resulting URL.</div>
               </div>
+            </div>
+          </div>
 
         {success && <div className="bg-green-50 border-2 border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6">{success}</div>}
         {error && <div className="bg-red-50 border-2 border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6">{error}</div>}
@@ -742,6 +829,45 @@ const TrainerProfile = () => {
               <textarea name="profile.bio" value={formData.profile.bio} onChange={handleChange} className="input-field" rows={4} placeholder="Tell students about yourself..." />
             </div>
           </div>
+
+
+          {/* Resume Upload */}
+          {/* <div className="mt-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Resume (PDF)</label>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const reader = new FileReader()
+                reader.onload = () => {
+                  const dataUrl = reader.result as string
+                  setFormData(prev => ({
+                    ...prev,
+                    profile: { ...prev.profile, resume: dataUrl }
+                  }))
+                }
+                reader.readAsDataURL(file)
+              }}
+              className="input-field"
+            />
+            {formData.profile.resume && (
+              <div className="mt-2">
+                <a href={formData.profile.resume} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                  View Uploaded Resume
+                </a>
+                <button
+                  type="button"
+                  className="ml-2 text-red-600"
+                  onClick={() => setFormData(prev => ({ ...prev, profile: { ...prev.profile, resume: '' } }))}
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+          </div> */}
+
 
           {/* Teaching Info */}
           <div>
@@ -848,14 +974,55 @@ const TrainerProfile = () => {
               <label className="block text-sm font-semibold text-gray-700 mb-2">Certifications</label>
               {(formData.profile.certifications || []).map((cert, idx) => (
                 <div key={idx} className="bg-gray-100 p-4 rounded mb-4 space-y-2">
-                  <input type="text" value={cert.name || ''} onChange={(e) => updateObjectInArray('certifications', idx, 'name', e.target.value)} className="input-field" placeholder="Certification Name" />
-                  <input type="text" value={cert.issuer || ''} onChange={(e) => updateObjectInArray('certifications', idx, 'issuer', e.target.value)} className="input-field" placeholder="Issuer" />
-                  <input type="number" value={cert.year ?? ''} onChange={(e) => updateCertYear(idx, e.target.value)} className="input-field" placeholder="Year" min="1950" max={CURRENT_YEAR} />
+                  
+                  {certFields.map(f => (
+                    <input
+                      key={f.key}
+                      type={f.type}
+                      value={cert[f.key] ?? ''}
+                      placeholder={f.placeholder}
+                      min={f.min}
+                      max={f.max}
+                      onChange={(e) => {
+                        const val = f.type === 'number' ? parseInt(e.target.value, 10) || null : e.target.value
+                        updateObjectInArray('certifications', idx, f.key, val)
+                      }}
+                      className="input-field"
+                    />
+                  ))}
+
+                  {/* Certificate Image */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Certificate Image</label>
+                    <input type="file" accept="image/*" onChange={(e) => {
+                      const file = e.target.files?.[0]; if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => updateObjectInArray('certifications', idx, 'certificateImage', reader.result as string);
+                      reader.readAsDataURL(file);
+                    }} className="input-field" />
+                    {cert.certificateImage && <img src={cert.certificateImage} alt="Cert" className="w-32 h-32 mt-2 object-cover rounded border" />}
+                  </div>
+
                   <button type="button" onClick={() => removeFromArray('certifications', idx)} className="text-red-600">Remove</button>
                 </div>
               ))}
-              <button type="button" onClick={() => addComplexToArray('certifications', { name: '', issuer: '', year: null })} className="btn-primary">Add Certification</button>
+
+              <button
+                type="button"
+                onClick={() => addComplexToArray  ('certifications', {
+                    name: '',
+                    issuer: '',
+                    year: null,
+                    certificateImage: '',
+                    certificateLink: ''
+                  })
+                }
+                className="btn-primary"
+              >
+                Add Certification
+              </button>
             </div>
+
 
             {/* Availability */}
             <div className="mt-6">
@@ -928,7 +1095,8 @@ const EducatorDashboard = () => {
     { name: 'Profile', href: '/trainer/profile', icon: User }
   ]
 
-  const isActive = (path) => {
+  // added string type
+  const isActive = (path: string) => {
     if (path === '/trainer') return location.pathname === '/trainer' || location.pathname === '/trainer/'
     return location.pathname.startsWith(path)
   }

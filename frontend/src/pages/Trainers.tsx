@@ -109,7 +109,11 @@ const Trainer: React.FC = () => {
     const fetchTrainers = async () => {
       try {
         const response = await axios.get('/api/users/trainers')
-        const data = Array.isArray(response.data) ? response.data : []
+        let data = Array.isArray(response.data) ? response.data : []
+       
+        // Keep only verified trainers
+        data = data.filter(trainer => trainer.profile.verificationStatus === 'verified')
+        
         if (mounted) setTrainers(data)
       } catch (error) {
         console.error('Failed to fetch trainers:', error)
@@ -252,7 +256,7 @@ const Trainer: React.FC = () => {
       {/* Floating decorative orbs (kept) */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-16 left-8 w-28 h-28 rounded-full" style={{ background: 'var(--brand-teal)', opacity: 0.06, animation: 'floaty 6s ease-in-out infinite' }} />
-        <div className="absolute top-40 right-12 w-20 h-20 rounded-full" style={{ background: 'var(--teal-mid)', opacity: 0.06, animation: 'floaty 6s ease-in-out infinite', animationDelay: '1.8s' }} />
+        <div className="absolute top-40 right-12 w-20 h-20 rounded-full" style={{ background: '#9787F3', opacity: 0.06, animation: 'floaty 6s ease-in-out infinite', animationDelay: '1.8s' }} />
         <div className="absolute bottom-20 left-1/4 w-36 h-36 rounded-full" style={{ background: 'var(--accent-orange)', opacity: 0.04, animation: 'floaty 6s ease-in-out infinite', animationDelay: '3.2s' }} />
       </div>
 

@@ -1,13 +1,28 @@
 import express from 'express';
 import Stripe from 'stripe';
+import dotenv from 'dotenv';
 import Booking from '../models/Booking.js';
 import { authenticate } from '../middleware/auth.js';
 
+dotenv.config();
+
 const router = express.Router();
-const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY) : null;
+if (!process.env.STRIPE_SECRET_KEY) {
+  console.warn('⚠️ STRIPE_SECRET_KEY is not set in .env, Stripe payments won’t work');
+  // throw new Error('STRIPE_SECRET_KEY is not set in .env');
+}
+
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2022-11-15', // or latest
+});
 
 // Create payment intent (Stripe)
 router.post('/create-payment-intent', authenticate, async (req, res) => {
+
+  console.log('📦 Received payment intent request body:', req.body);
+  console.log('🔐 Authenticated user:', req.user);
+
   try {
     const { amount, currency = 'usd' } = req.body;
 
@@ -28,6 +43,8 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
       }
     });
 
+    console.log('✅ Stripe PaymentIntent created:', paymentIntent.id);
+
     res.json({
       clientSecret: paymentIntent.client_secret,
       paymentIntentId: paymentIntent.id,
@@ -36,7 +53,7 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Stripe payment error:', error);
-    res.status(400).json({ 
+    res.status(400).json({
       message: error.message,
       type: 'stripe_error'
     });
@@ -46,14 +63,14 @@ router.post('/create-payment-intent', authenticate, async (req, res) => {
 // Store payment details
 router.post('/store-payment', authenticate, async (req, res) => {
   try {
-    const { 
-      bookingId, 
-      paymentId, 
-      amount, 
-      currency, 
-      paymentMethod, 
+    const {
+      bookingId,
+      paymentId,
+      amount,
+      currency,
+      paymentMethod,
       status,
-      receiptUrl 
+      receiptUrl
     } = req.body;
 
     // Update booking with payment details
@@ -93,13 +110,13 @@ router.post('/store-payment', authenticate, async (req, res) => {
 router.post('/fake-payment', authenticate, async (req, res) => {
   try {
     const { amount } = req.body;
-    
+
     // Simulate payment processing delay
     await new Promise(resolve => setTimeout(resolve, 1000));
-    
+
     // Generate fake payment ID
     const fakePaymentId = `fake_payment_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-    
+
     res.json({
       success: true,
       paymentId: fakePaymentId,
@@ -114,7 +131,7 @@ router.post('/fake-payment', authenticate, async (req, res) => {
 });
 
 // Webhook endpoint for Stripe
-router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
+router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   if (!stripe) {
     return res.status(400).send('Stripe not configured');
   }
@@ -135,12 +152,12 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
     case 'payment_intent.succeeded':
       const paymentIntent = event.data.object;
       console.log('PaymentIntent was successful!', paymentIntent.id);
-      
+
       // Update booking status
       try {
         await Booking.updateMany(
           { paymentId: paymentIntent.id },
-          { 
+          {
             paymentStatus: 'completed',
             status: 'confirmed'
           }
@@ -149,17 +166,17 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
         console.error('Error updating booking:', error);
       }
       break;
-      
+
     case 'payment_method.attached':
       const paymentMethod = event.data.object;
       console.log('PaymentMethod was attached to a Customer!', paymentMethod.id);
       break;
-      
+
     default:
       console.log(`Unhandled event type ${event.type}`);
   }
 
-  res.json({received: true});
+  res.json({ received: true });
 });
 
 export default router;

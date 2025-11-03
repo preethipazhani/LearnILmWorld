@@ -23,13 +23,17 @@ const CertificationSchema = new mongoose.Schema({
       message: props => `Certification year must be between 1950 and ${CURRENT_YEAR}`
     },
     default: null
-  }
+  },
+  // New fields for trainer verification
+  certificateLink: { type: String, trim: true, default: '' },
+  issuedDate: { type: Date, default: null },
+  certificateImage: { type: String, trim: true, default: '' }
 }, { _id: false });
 
 const AvailabilitySchema = new mongoose.Schema({
   day: {
     type: String,
-    enum: ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'],
+    enum: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
     required: true
   },
   startTime: { type: String, default: null },
@@ -41,10 +45,14 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   email: { type: String, required: true, unique: true, lowercase: true, trim: true, index: true },
   password: { type: String, required: true, minlength: 8 },
-  role: { type: String, enum: ['student', 'trainer'], required: true },
+  role: { type: String, enum: ['student', 'trainer', 'admin'], required: true },
   profile: {
     // basic
     bio: { type: String, trim: true, default: '' },
+
+    dob: { type: Date, default: null },
+
+    resume: { type: String, trim: true, default: '' }, // (can be a file URL or link)
 
     // primary image URL (single) - used for trainers & students
     imageUrl: { type: String, trim: true, default: '' },
@@ -85,9 +93,22 @@ const userSchema = new mongoose.Schema({
 
     isAvailable: { type: Boolean, default: true },
     totalBookings: { type: Number, default: 0 },
-    averageRating: { type: Number, default: 5.0 }
+    averageRating: { type: Number, default: 5.0 },
+
+    // trainer verification–related fields
+    education: { type: String, trim: true, default: '' },
+    teachingExperienceDetails: { type: String, trim: true, default: '' },
+    verificationStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'rejected'],
+      default: 'pending'
+    },
+    verificationNotes: { type: String, trim: true, default: '' },
+    // for re register after 6 months
+    rejectionDate: { type: Date, default: null },
   },
   isActive: { type: Boolean, default: true },
+  //  isVerified: { type: Boolean, default: false }, // new field
   stats: {
     totalSessions: { type: Number, default: 0 },
     completedSessions: { type: Number, default: 0 },
@@ -115,7 +136,7 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 // Ensure full availability array (helper)
 userSchema.methods.ensureFullAvailability = function () {
-  const ALL_DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+  const ALL_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const existing = (this.profile?.availability || []).reduce((acc, a) => { acc[a.day] = a; return acc; }, {});
   this.profile = this.profile || {};
   this.profile.availability = ALL_DAYS.map(d => {

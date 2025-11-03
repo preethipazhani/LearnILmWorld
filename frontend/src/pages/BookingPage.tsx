@@ -28,15 +28,15 @@ import { useAuth } from '../contexts/AuthContext'
 
 const stripePromise = loadStripe(
   import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY ||
-    'pk_test_51S23EsEiAibFBvoAcRhsYQj1fNiqfWKTJqrMgHlf76AjyFOyM81AU3DSqgboUKpIdClQmcMIEhUMOtOeYiz4eX4v00JEPCpKeA'
+    'pk_test_51SFTuTAiYefZpFfcyRQjJAUIlyldQfTLpmtR1XvsmwPHESrdu7b5klbKyxsDF0a6YLurpdSnHEDLPFHmcyjbb6DP00KsLS35fZ'
 )
 
 /* ------------------ Injected CSS ------------------ */
 const INJECTED_CSS = `
 :root{
-  --brand-teal: #0ea5a3;
-  --teal-mid: #6ee7b7;
-  --dark-teal: #0b766a;
+  --brand-#9787F3: #9787F3;
+  --#9787F3-mid: #6ee7b7;
+  --dark-#9787F3: #0b766a;
   --accent-orange: #f97316;
   --coral-deep: #ff6b35;
   --bg-pale-top: #f8fbff;
@@ -50,12 +50,12 @@ const INJECTED_CSS = `
 body,html,#root{margin:0;padding:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;color:var(--text);background:linear-gradient(180deg,var(--bg-pale-top),var(--bg-pale));}
 .container{max-width:1100px;margin:0 auto;padding:28px}
 .header-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
-.logo-box{width:64px;height:64px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand-teal),var(--teal-mid));color:#fff;box-shadow:0 8px 30px rgba(14,165,163,0.12)}
+.logo-box{width:64px;height:64px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand-#9787F3),var(--#9787F3-mid));color:#fff;box-shadow:0 8px 30px rgba(14,165,163,0.12)}
 .app-title{font-size:20px;font-weight:700}
 .app-sub{font-size:13px;color:var(--muted);margin-top:4px}
 .grid-2{display:grid;grid-template-columns:1fr 420px;gap:28px}
 @media(max-width:900px){.grid-2{grid-template-columns:1fr}}
-.avatar{width:76px;height:76px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand-teal),var(--teal-mid));color:#fff;box-shadow:0 12px 30px rgba(14,165,163,0.12)}
+.avatar{width:76px;height:76px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--brand-#9787F3),var(--#9787F3-mid));color:#fff;box-shadow:0 12px 30px rgba(14,165,163,0.12)}
 .section-title{font-size:18px;font-weight:700;margin-bottom:12px}
 .small-muted{color:var(--muted);font-size:13px}
 .info-list{list-style:none;padding:0;margin:0}
@@ -64,7 +64,7 @@ body,html,#root{margin:0;padding:0;font-family:Inter,system-ui,-apple-system,"Se
 .method-group{margin-top:16px;display:flex;flex-direction:column;gap:12px}
 .method-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid rgba(15,23,42,0.05);cursor:pointer;background:transparent;transition:all .18s}
 .method-item:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(2,6,23,0.04)}
-.method-item.active{border:2px solid var(--dark-teal);box-shadow:0 12px 30px rgba(11,118,106,0.12);background:linear-gradient(180deg,rgba(11,118,106,0.02),rgba(14,165,163,0.01))}
+.method-item.active{border:2px solid var(--dark-#9787F3);box-shadow:0 12px 30px rgba(11,118,106,0.12);background:linear-gradient(180deg,rgba(11,118,106,0.02),rgba(14,165,163,0.01))}
 .method-icon{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;background:#fff;box-shadow:0 8px 18px rgba(2,6,23,0.04)}
 .method-label{font-weight:700}
 .method-sub{font-size:13px;color:var(--muted)}
@@ -76,7 +76,7 @@ body,html,#root{margin:0;padding:0;font-family:Inter,system-ui,-apple-system,"Se
 .label{display:block;font-weight:600;color:var(--muted);margin-bottom:8px;font-size:13px}
 .input{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);background:var(--card);font-size:14px;outline:none}
 .btn-primary{background:var(--accent-orange);color:#fff;padding:12px;border-radius:10px;border:none;font-weight:800;cursor:pointer}
-.btn-secondary{background:var(--brand-teal);color:#fff;padding:10px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
+.btn-secondary{background:var(--brand-#9787F3);color:#fff;padding:10px;border-radius:10px;border:none;font-weight:700;cursor:pointer}
 .helper{font-size:13px;color:var(--muted)}
 .alert{display:flex;gap:10px;align-items:center;border-radius:10px;padding:10px 12px;background:#fff7f7;color:var(--danger);border:1px solid rgba(239,68,68,0.08);font-weight:600}
 .footer-note{margin-top:14px;font-size:13px;color:var(--muted)}
@@ -264,7 +264,7 @@ const PaymentPanel = ({ trainer, selectedMethod, onPaymentSuccess, onPaymentErro
 
           <div style={{ textAlign: 'right' }}>
             <div className="small-muted">Total</div>
-            <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--brand-teal)' }}>
+            <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--brand-#9787F3)' }}>
               ${trainer.profile?.hourlyRate || 25}
             </div>
           </div>
@@ -432,14 +432,14 @@ const BookingPage = () => {
         className="d-flex align-items-center justify-content-center bg-light rounded-circle shadow-sm"
         style={{ width: 96, height: 96, margin: "24px auto" }}
       >
-        <CheckCircle size={48} strokeWidth={2.5} color="var(--brand-teal)" />
+        <CheckCircle size={48} strokeWidth={2.5} color="var(--brand-#9787F3)" />
       </div>
 
       {/* Title & Subtitle */}
       <h3 className="fw-bold mb-2">Payment Successful</h3>
       <p className="text-muted mb-4">
         Your session with{" "}
-        <strong style={{ color: "var(--brand-teal)" }}>{trainer.name}</strong>{" "}
+        <strong style={{ color: "var(--brand-#9787F3)" }}>{trainer.name}</strong>{" "}
         has been booked successfully.
       </p>
 
@@ -455,7 +455,7 @@ const BookingPage = () => {
           </div>
           <div className="d-flex justify-content-between mb-2">
             <span className="text-muted">Amount</span>
-            <strong style={{ color: "var(--brand-teal)" }}>
+            <strong style={{ color: "var(--brand-#9787F3)" }}>
               ${booking?.amount}
             </strong>
           </div>
@@ -475,7 +475,7 @@ const BookingPage = () => {
           to="/main"
           className="btn px-4 py-2"
           style={{
-            background: "var(--brand-teal)",
+            background: "var(--brand-#9787F3)",
             color: "white",
           }}
         >
@@ -495,7 +495,7 @@ const BookingPage = () => {
           
           <div>
                 <div className="text-lg font-semibold">LEARN🌎SPHERE</div>
-                <div className="text-xs text-slate-500 -mt-1">Live lessons · Micro-courses</div>
+                <div className="text-xs text-[#2D274B]500 -mt-1">Live lessons · Micro-courses</div>
               </div>
         </div>
         <button onClick={() => navigate(-1)} style={{ background: 'transparent', border: 'none', color: 'var(--muted)', cursor: 'pointer' }}>
