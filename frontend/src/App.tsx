@@ -14,12 +14,16 @@ import EducatorDashboard from './pages/trainer/EducatorDashboard'
 import BookingPage from './pages/BookingPage'
 import SessionRoom from './pages/SessionRoom'
 import TrainerProfile from './pages/TrainerProfile'
+
+
 import Trainers from './pages/Trainers'
 import ForgotPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import BecomeTrainer from './pages/BecomeTrainer';
 import AboutPage from './pages/AboutPage';
+import Chatbot from './components/Chatbot/Chatbot'; // ← ADD THIS LINE
+
 function App() {
   return (
      <StripeProvider>
@@ -63,6 +67,8 @@ function App() {
                 </PrivateRoute>
               } />
             </Routes>
+            
+            <Chatbot />  {/* ← ADD THIS LINE HERE */}
           </div>
         </Router>
       </AuthProvider>

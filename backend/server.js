@@ -8,7 +8,10 @@ import bookingRoutes from './routes/bookingRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import adminRoutes from './routes/adminRoutes.js'
+import chatbotRoutes from './routes/chatbotRoutes.js';
+import dotenv from 'dotenv';
 
+dotenv.config();
 
 const app = express();
 
@@ -21,7 +24,11 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:5173',   // Vite default
-  'http://localhost:3000',   // CRA default
+  'http://localhost:3000',
+  'https://learnilmworld.onrender.com',
+  'https://learnilmworld.onrender.com/api',
+  'https://www.learnilmworld.com',
+  'https://learn-ilm-world.vercel.app',   // CRA default
   process.env.FRONTEND_URL,  // your deployed frontend (e.g., https://learnosphere.vercel.app)
 ].filter(Boolean); // remove undefined
 
@@ -47,12 +54,10 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/chatbot', chatbotRoutes);  
 
 // Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB connected'))
   .catch(err => console.error('MongoDB connection error:', err));
 
@@ -76,4 +81,6 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-export default app;
+
+
+export default app;
