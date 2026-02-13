@@ -291,7 +291,7 @@ const Chatbot = () => {
             >
               {suggestion.text}
             </button>
-          ))}
+          ))}++
         </div>
       </div>
     );

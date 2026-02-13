@@ -1,4 +1,3 @@
-// Chatbot.js - Update the schema
 import mongoose from 'mongoose';
 
 const chatbotSchema = new mongoose.Schema({
